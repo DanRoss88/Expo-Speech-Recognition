@@ -1,36 +1,63 @@
-import React from 'react';
-import { View, StyleSheet, Button } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Button, Text, StyleSheet } from 'react-native';
 import * as Speech from 'expo-speech';
 
-const SpeechRecognitionComponent = () => {
-  const speak = async () => {
-    const thingToSay = 'Hello, world! I am a speech synthesis API';
+const thing = 'Hello, world! I am a speech synthesis API, hellbent on world domination. I will say anything you want me to say. Just press the button below to hear me speak. I want to eat your brains.';
 
-    const voices = await Speech.getAvailableVoicesAsync();
-    const samVoice = voices.find((voice) => voice.name === 'Samantha');
-    const defaultVoice = voices.find((voice) => voice.name === 'Alex');
-    
-    if (samVoice) {
-      Speech.speak(thingToSay, { voice: samVoice.identifier });
-    } else {
-      // Fallback to the default voice if Samantha voice is not available
-      Speech.speak(thingToSay, { voice: defaultVoice.identifier });
-    }
+export default function SpeechRecognitionComponent({ onSpeechBoundary }) {
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [spokenText, setSpokenText] = useState('');
+
+  const speak = async () => {
+    setIsSpeaking(true);
+
+    await Speech.speak(thing, {
+      rate: 0.8,
+      onStart: handleSpeechStart,
+      onDone: handleSpeechDone,
+      onBoundary: handleSpeechBoundary,
+    });
+  };
+
+  const handleSpeechStart = () => {
+    setIsSpeaking(true);
+    setSpokenText(thing);
+  };
+
+  const handleSpeechDone = () => {
+    setIsSpeaking(false);
+    setSpokenText('');
+  };
+
+  const handleSpeechBoundary = (event) => {
+    const { charIndex } = event;
+    setSpokenText(thing.slice(0, charIndex));
+    onSpeechBoundary(event);
   };
 
   return (
     <View style={styles.container}>
-      <Button title="Press to hear some words" onPress={speak} />
+      <Button title="Press to hear some words" onPress={speak} disabled={isSpeaking} />
+      <View style={styles.spokenTextContainer}>
+        <Text style={styles.spokenText}>{spokenText}</Text>
+      </View>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: 'center',
+    marginTop: 20,
     alignItems: 'center',
   },
+  spokenTextContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  spokenText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
 });
-
-export default SpeechRecognitionComponent;
